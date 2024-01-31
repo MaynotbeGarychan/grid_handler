@@ -1,0 +1,11 @@
+filein = '/home/chen/Desktop/remmina_share_folder/cylinder_rot_0.0_load_tensionx_finite_strain_material_porous_finite_strain_flab20ex_algorithm_finite_strain/result/output_file_M1_varInt8_200.vtk'; 
+[X,dx,dy,dz,nx,ny,nz,S,datatype] = readfieldvtk(filein);
+
+filein = '/home/chen/Desktop/remmina_share_folder/cylinder_rot_0.0_load_tensionx_finite_strain_material_porous_finite_strain_flab20ex_algorithm_finite_strain/result/output_file_M1_varInt9_200.vtk'; 
+[Y,dx,dy,dz,nx,ny,nz,S,datatype] = readfieldvtk(filein);
+
+filein = '/home/chen/Desktop/remmina_share_folder/cylinder_rot_0.0_load_tensionx_finite_strain_material_porous_finite_strain_flab20ex_algorithm_finite_strain/result/output_file_M1_varInt10_200.vtk'; 
+[Z,dx,dy,dz,nx,ny,nz,S,datatype] = readfieldvtk(filein);
+%%
+vectorfield = [X, Y, Z];
+func

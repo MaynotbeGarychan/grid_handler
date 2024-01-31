@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<Loading_Output>
+  <Output>
+    <vtk_StressStrain Strain="0" Stress="0"/>
+    <vtk_IntVarList numM="1">13</vtk_IntVarList>
+  </Output>
+  <Loading Tag="1">
+    <Time_Discretization Discretization="Linear" Nincr="100" Tfinal="300"/>
+    <Output_vtkList>9</Output_vtkList>
+    <xx Driving="Strain" Evolution="Linear" Value="0.3"/>
+    <yy Driving="Stress" Evolution="Linear" Value="0.0"/>
+    <zz Driving="Stress" Evolution="Linear" Value="0.0"/>
+    <xy Driving="Stress" Evolution="Linear" Value="0.0"/>
+    <xz Driving="Stress" Evolution="Linear" Value="0"/>
+    <yz Driving="Stress" Evolution="Linear" Value="0"/>
+  </Loading>
+</Loading_Output>

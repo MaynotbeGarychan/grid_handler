@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<Materials>
+  <Reference_Material Lambda0="2.02e+13" Mu0="1.35e+13"/>
+  <!--Material numM="1" Lib="/mnt/d/chen_wsl/amitex_fftp_application/lib_material/epvmisohpwlsr/src/libUmatBehaviour.so" Law="umatepvmisohpwl_malls"-->
+  <Material numM="1" Lib="/mnt/d/chen_wsl/amitex_fftp_application/lib_material/epvmisohpwlsr/src/libUmatBehaviour.so" Law="umatepvmisohpwl_malls">
+    <Coeff Index="1" Type="Constant" Value="0.0"/>
+    <Coeff Index="2" Type="Constant" Value="0.0"/>
+    <Coeff Index="3" Type="Constant" Value="0.0"/>
+    <Coeff Index="4" Type="Constant" Value="0.0"/>
+    <IntVar Index="1" Type="Constant" Value="0.0"/>
+    <IntVar Index="2" Type="Constant" Value="0.0"/>
+    <IntVar Index="3" Type="Constant" Value="0.0"/>
+    <IntVar Index="4" Type="Constant" Value="0.0"/>
+    <IntVar Index="5" Type="Constant" Value="0.0"/>
+    <IntVar Index="6" Type="Constant" Value="0.0"/>
+    <IntVar Index="7" Type="Constant" Value="0.0"/>
+	<IntVar Index="8" Type="Constant" Value="0.0"/>
+    <IntVar Index="9" Type="Constant" Value="0.0"/>
+    <IntVar Index="10" Type="Constant" Value="0.0"/>
+    <IntVar Index="11" Type="Constant" Value="0.0"/>
+    <IntVar Index="12" Type="Constant" Value="0.0"/>
+    <IntVar Index="13" Type="Constant" Value="0.0"/>
+    <IntVar Index="14" Type="Constant" Value="0.0"/>
+    <IntVar Index="15" Type="Constant" Value="0.0"/>
+  </Material>
+  <Material numM="2" Lib="/mnt/d/chen_wsl/amitex_fftp/libAmitex/src/materiaux/libUmatAmitex.so" Law="elasiso">
+    <Coeff Index="1" Type="Constant" Value="0.0"/>
+    <Coeff Index="2" Type="Constant" Value="0.0"/>
+  </Material>
+</Materials>
