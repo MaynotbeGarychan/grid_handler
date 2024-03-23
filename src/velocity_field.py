@@ -81,7 +81,7 @@ def cal_velocity_field_elliptic(x_array,y_array,z_array,phase_id_array,center, f
     return vx,vy,vz,veta
 
 def vtk_eqstrain_rate_field_elliptic(resolution, L1, L2, h, H, R1, R2, D33, mub, rot_angle,
-                                     save_dir_grid, save_dir_velo, save_dir_deq, rve = 'off'):
+                                     save_dir_grid, save_dir_velo, save_dir_deq, periodic = 'off'):
     # init some parameter
     foci = sqrt(pow(R1,2)-pow(R2,2))
     c = h/H
@@ -99,14 +99,14 @@ def vtk_eqstrain_rate_field_elliptic(resolution, L1, L2, h, H, R1, R2, D33, mub,
     x, y, z = origin_point_clouds(grid.x_array, grid.y_array, grid.z_array, size / 2)
     # xr, yr, zr = rotate_point_clouds(x, y, z, rot_mat)
     vx,vy,vz,deq = cal_eqstrain_rate_field_elliptic(x, y, z, grid.phase_id_array, foci, c, h, D33, mub, rot_mat, L1, L2,
-                                                    rve)
+                                                    periodic)
     rot_mat_inv = numpy.linalg.inv(rot_mat)
     vxr, vyr, vzr = rotate_point_clouds(vx, vy, vz, rot_mat_inv)
     write_vtk_vector_field(save_dir_velo, cells, vxr, vyr, vzr)
     write_vtk_scalar_field(save_dir_deq, cells, deq)
 
 def cal_eqstrain_rate_field_elliptic(x_array, y_array, z_array, phase_id_array, foci, c, h, D33, miub, rot_mat, L1, L2,
-                                     rve = 'off'):
+                                     periodic = 'off'):
     xr, yr, zr = rotate_point_clouds(x_array, y_array, z_array, rot_mat)
     # obtain elliptic cylindrical coordinates system
     miu, v, z = cartesian_to_ellipse_cylinder(xr, yr, zr, foci)
@@ -125,7 +125,7 @@ def cal_eqstrain_rate_field_elliptic(x_array, y_array, z_array, phase_id_array, 
     vz[idx] = D33 / c * z[idx]
     deq[idx] = D33 / sqrt(3) / c * np.sqrt(3 + pow(miub, 4) / np.power(miu[idx], 4))
     # exterior region
-    if rve == 'on':
+    if periodic == 'on':
         # 1
         x = np.array(x_array)
         y = np.array(y_array)

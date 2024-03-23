@@ -41,7 +41,6 @@ def rotation_matrix_by_vector(vector):
     rotation_matrix = rotation_matrix_by_raxis_angle(axis,angle)
     return rotation_matrix
 
-
 def origin_point_clouds(x,y,z,center):
     x_t = x - center[0]
     y_t = y - center[1]
@@ -95,23 +94,3 @@ def ellipse_to_cartersian(mu,v,foci):
     x = foci * np.cosh(mu)*np.cos(v)
     y = foci * np.sinh(mu)*np.sin(v)
     return x,y
-
-
-
-if __name__ == "__main__":
-    import numpy as np
-
-
-    def cartesian_to_elliptic(x, y, c):
-        r = np.sqrt(x ** 2 + y ** 2)
-        u = np.arccosh(r / (2 * c))
-        v = np.arctan2(y, x)
-        return u, v
-
-
-    x = 3  # Replace with your x-coordinate
-    y = 2  # Replace with your y-coordinate
-    c = 2  # Replace with the predefined distance to the foci
-
-    u, v = cartesian_to_elliptic(x, y, c)
-    print(f'Elliptic coordinates: u = {u}, v = {v}')

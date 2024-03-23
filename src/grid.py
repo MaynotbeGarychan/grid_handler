@@ -1,20 +1,29 @@
+import multiprocessing
+
 import numpy as np
-import damask
-from src.transformation import rotation_matrix_by_euler_angle
 import struct
+# import damask
+from src.transformation import rotation_matrix_by_euler_angle
 from src.transformation import rotate_point_clouds
+from src.domain import chk_sphere_domain, chk_ellipse_domain, chk_cylinder_domain
+from math import pi
 
 class objGrid(object):
     x_array = np.array(0)
     y_array = np.array(0)
     z_array = np.array(0)
     phase_id_array = np.array(0)
-    origin =  np.array(0)
-    cells =  np.array(0)
-    size =  np.array(0)
+    origin = np.array(0)
+    cells = np.array(0)
+    size = np.array(0)
     spacing = np.array(0)
     num_points = 0
     unit_dist = 0
+    periodic = False
+    x_array_periodic = np.array(0)
+    y_array_periodic = np.array(0)
+    z_array_periodic = np.array(0)
+    phase_id_array_periodic = np.array(0)
 
     def __init__(self,cells,size,origin):
         self.origin = np.zeros(shape=3, dtype=float)
@@ -42,90 +51,110 @@ class objGrid(object):
                     self.z_array[pos] = k * self.spacing[2]
                     pos = pos + 1
 
+#   periodic
+    def init_periodic(self):
+        self.periodic = True
+        # x
+        self.x_array_periodic = np.concatenate((self.x_array, self.x_array + self.size[0]))
+        self.y_array_periodic = np.concatenate((self.y_array, self.y_array))
+        self.z_array_periodic = np.concatenate((self.z_array, self.z_array))
+        self.x_array_periodic = np.concatenate((self.x_array_periodic, self.x_array - self.size[0]))
+        self.y_array_periodic = np.concatenate((self.y_array_periodic, self.y_array))
+        self.z_array_periodic = np.concatenate((self.z_array_periodic, self.z_array))
+        # y
+        self.x_array_periodic = np.concatenate((self.x_array_periodic, self.x_array))
+        self.y_array_periodic = np.concatenate((self.y_array_periodic, self.y_array + self.size[1]))
+        self.z_array_periodic = np.concatenate((self.z_array_periodic, self.z_array))
+        self.x_array_periodic = np.concatenate((self.x_array_periodic, self.x_array))
+        self.y_array_periodic = np.concatenate((self.y_array_periodic, self.y_array - self.size[1]))
+        self.z_array_periodic = np.concatenate((self.z_array_periodic, self.z_array))
+        # z
+        self.x_array_periodic = np.concatenate((self.x_array_periodic, self.x_array))
+        self.y_array_periodic = np.concatenate((self.y_array_periodic, self.y_array))
+        self.z_array_periodic = np.concatenate((self.z_array_periodic, self.z_array + self.size[2]))
+        self.x_array_periodic = np.concatenate((self.x_array_periodic, self.x_array))
+        self.y_array_periodic = np.concatenate((self.y_array_periodic, self.y_array))
+        self.z_array_periodic = np.concatenate((self.z_array_periodic, self.z_array - self.size[2]))
+        # phase_id
+        self.phase_id_array_periodic = np.ones(shape=self.num_points*7, dtype=int)
+
+    def crop_periodic_phase(self, condition_array_total, damage_id):
+        temp_arr = condition_array_total.reshape((7, self.num_points))
+        summed_array = np.sum(temp_arr, axis=0)
+        self.phase_id_array = np.where(summed_array != 0, damage_id, self.phase_id_array)
+
+#   crop single damage
     def crop_sphere(self,center,radius,sphere_id):
-        distx = self.x_array - center[0]
-        disty = self.y_array - center[1]
-        distz = self.z_array - center[2]
-        distx2 = np.power(distx,2)
-        disty2 = np.power(disty, 2)
-        distz2 = np.power(distz, 2)
-        dist_array_2 = distx2 + disty2 + distz2
-        thres = radius ** 2
-        condition_array = dist_array_2 < thres
+        condition_array = chk_sphere_domain(self.x_array,self.y_array,self.z_array,center,radius)
         self.phase_id_array = np.where(condition_array, sphere_id, self.phase_id_array)
 
     def crop_ellipse(self,center,radius,in_ellipse_id):
-        a2,b2,c2 = radius[0]**2,radius[1]**2,radius[2]**2
-        dist_array_2 = (self.x_array - center[0])**2/a2 + (self.y_array - center[1])**2/b2 +(self.z_array - center[2])**2/c2
-        condition_array = dist_array_2 < 1
+        condition_array = chk_ellipse_domain(self.x_array,self.y_array,self.z_array, center, radius)
         self.phase_id_array = np.where(condition_array, in_ellipse_id, self.phase_id_array)
 
     def crop_rotated_ellipse(self,center,radius,rot,in_ellipse_id):
-        # rot = rotation_matrix_by_euler_angle(euler_angle)
-        x_array_origin = self.x_array - center[0]
-        y_array_origin = self.y_array - center[1]
-        z_array_origin = self.z_array - center[2]
-        x_array_origin_rot = x_array_origin * rot[0, 0] + y_array_origin * rot[1, 0] + z_array_origin * rot[2, 0]
-        y_array_origin_rot = x_array_origin * rot[0, 1] + y_array_origin * rot[1, 1] + z_array_origin * rot[2, 1]
-        z_array_origin_rot = x_array_origin * rot[0, 2] + y_array_origin * rot[1, 2] + z_array_origin * rot[2, 2]
-        a2, b2, c2 = radius[0] ** 2, radius[1] ** 2, radius[2] ** 2
-        dist_array_2 = x_array_origin_rot ** 2 / a2 + y_array_origin_rot ** 2 / b2 + z_array_origin_rot ** 2 / c2
-        condition_array = dist_array_2 < 1
+        condition_array = chk_ellipse_domain(self.x_array,self.y_array,self.z_array, center, radius, True, rot)
         self.phase_id_array = np.where(condition_array, in_ellipse_id, self.phase_id_array)
 
     def crop_cylinder(self,center,radius,height,in_cylinder_id, axis_option = 'x'):
-        if axis_option == 'z':
-            height_array = np.abs(self.z_array - center[2])
-            dist_array_2 = (self.x_array - center[0]) ** 2 / (radius[0] ** 2) + (self.y_array - center[1]) ** 2 / (
-                        radius[1] ** 2)
-            condition_array = (height_array < height) & (dist_array_2 < 1)
-            idx_list = np.where(condition_array)
-            self.phase_id_array[idx_list] = in_cylinder_id
-        else:
-            height_array = np.abs(self.x_array - center[0])
-            dist_array_2 = (self.y_array - center[1])**2/(radius[0]**2) +(self.z_array - center[2])**2/(radius[1]**2)
-            condition_array = (height_array<height) & (dist_array_2 < 1)
-            idx_list = np.where(condition_array)
-            self.phase_id_array[idx_list] = in_cylinder_id
-
-    def crop_cylinder_outside_frictive(self,center,radius,out_cylinder_id):
-        x_array_origin = self.x_array - center[0]
-        y_array_origin = self.y_array - center[1]
-        z_array_origin = self.z_array - center[2]
-        dist_array_2 = np.power(x_array_origin,2) / (radius[0] ** 2) + np.power(y_array_origin,2) / (radius[1] ** 2)
-        idx_list = np.where(dist_array_2 > 1)
-        self.phase_id_array[idx_list] = out_cylinder_id
-
-    def crop_rotated_cylinder(self,center,radius,height,rotation,in_cylinder_id, axis_option = 'x'):
-        x_array_origin = self.x_array - center[0]
-        y_array_origin = self.y_array - center[1]
-        z_array_origin = self.z_array - center[2]
-        x_array_origin_rot, y_array_origin_rot, z_array_origin_rot = rotate_point_clouds(x_array_origin, y_array_origin,
-                                                                                         z_array_origin, rotation)
-        if axis_option == 'z':
-            height_array = np.abs(z_array_origin_rot)
-            dist_array_2 = x_array_origin_rot ** 2 / (radius[0] ** 2) + y_array_origin_rot ** 2 / (radius[1] ** 2)
-        else:
-            height_array = np.abs(x_array_origin_rot)
-            dist_array_2 = y_array_origin_rot**2/(radius[0]**2) + z_array_origin_rot**2/(radius[1]**2)
-        condition_array = (height_array<height) & (dist_array_2 < 1)
+        condition_array = chk_cylinder_domain(self.x_array, self.y_array, self.z_array, center, radius, height)
         self.phase_id_array = np.where(condition_array, in_cylinder_id, self.phase_id_array)
 
-    def crop_oblique_cylinder_with_various_direction(self,center,radius,h,plane_direction,z_axis_direction,in_cylinder_id):
+    # def crop_cylinder_outside_frictive(self,center,radius,out_cylinder_id):
+    #     x_array_origin = self.x_array - center[0]
+    #     y_array_origin = self.y_array - center[1]
+    #     z_array_origin = self.z_array - center[2]
+    #     dist_array_2 = np.power(x_array_origin,2) / (radius[0] ** 2) + np.power(y_array_origin,2) / (radius[1] ** 2)
+    #     idx_list = np.where(dist_array_2 > 1)
+    #     self.phase_id_array[idx_list] = out_cylinder_id
 
-        plane_direction /= np.linalg.norm(plane_direction)
-        z_axis_direction /= np.linalg.norm(z_axis_direction)
+    def crop_rotated_cylinder(self,center,radius,height,rot,in_cylinder_id):
+        condition_array = (self.x_array, self.y_array, self.z_array, center, radius, height, True, rot)
+        self.phase_id_array = np.where(condition_array, in_cylinder_id, self.phase_id_array)
 
-        point_vector_x_array = self.x_array - center[0]
-        point_vector_y_array = self.y_array - center[1]
-        point_vector_z_array = self.z_array - center[2]
-        vertical_distance_array = (point_vector_x_array * plane_direction[0] + point_vector_y_array * plane_direction[1]
-                                + point_vector_z_array * plane_direction[2])
+#   crop multiple damage
+    def crop_multi_spheres(self, center_list, radius_list, damage_id):
+        self.init_periodic()
+        num = len(center_list)
+        condition_array = np.zeros(len(self.x_array_periodic),dtype=int)
+        for i in range(num):
+            print(f"Cropping multiple sphere: {i + 1}/{num}")
+            condition_array += chk_sphere_domain(self.x_array_periodic, self.y_array_periodic, self.z_array_periodic,
+                                                center_list[i], radius_list[i])
+        print(f"Analyzing multiple sphere")
+        self.crop_periodic_phase(condition_array, damage_id)
 
-        real_distance_array_2 = point_vector_x_array**2 + point_vector_y_array**2 + point_vector_z_array**2
+    def crop_porous_band(self, vol_void, ratio_void0, ratio_band, in_damage_id, supplement_bool = True):
+        l = self.size[0]/2
+        radius_void0 = l * ratio_void0
+        vol_void0 = 4 / 3 * pi * pow(radius_void0, 3)
+        num_void = round(vol_void / vol_void0)
+        band_width = l * ratio_band
+        # generate random point
+        center_list = _generate_random_seeds_in_band(l, num_void, band_width)
+        radius_list = [radius_void0] * num_void
+        # crop
+        self.crop_multi_spheres(center_list, radius_list, in_damage_id)
+        # checking damage
+        if supplement_bool is True:
+            vol_void_model = self.ret_damage_fraction(in_damage_id)
+            vol_void_add = vol_void - vol_void_model
+            num_void_add = int(vol_void_add/vol_void0)
+            while num_void_add > 1:
+                print('begin to add additional voids')
+                center_list = _generate_random_seeds_in_band(l, num_void_add, band_width)
+                radius_list = [radius_void0] * num_void_add
+                self.crop_multi_spheres(center_list, radius_list, in_damage_id)
+                vol_void_model = self.ret_damage_fraction(in_damage_id)
+                vol_void_add = vol_void - vol_void_model
+                num_void_add = int(vol_void_add / vol_void0)
 
-        horizonal_distance_array_2 = real_distance_array_2 - vertical_distance_array**2
+# analyze damage
+    def ret_damage_fraction(self, in_damage_id):
+        num_dmg = np.count_nonzero(self.phase_id_array == in_damage_id)
+        return num_dmg/len(self.phase_id_array)
 
+# output function
     def output(self,dir,solver):
         if solver == 'amitex_fftp':
             self.output_amitxfftp(dir)
@@ -168,3 +197,12 @@ class objGrid(object):
         binary_data = struct.pack('>' + 'i'*len(self.phase_id_array), *self.phase_id_array )
         fio.write(binary_data)
         fio.close()
+
+# others
+def _generate_random_seeds_in_band(l, num, width):
+    rng = np.random.default_rng(12345)
+    x_arr = rng.uniform(0, l * 2, num)
+    y_arr = rng.uniform(0, l * 2, num)
+    z_arr = rng.uniform(l - width, l + width, num)
+    center_list = np.stack((x_arr, y_arr, z_arr), axis=-1)
+    return center_list
